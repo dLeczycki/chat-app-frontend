@@ -1,25 +1,55 @@
-import React from 'react';
-import logo from './logo.svg';
+import { useEffect, useState } from 'react';
+import io, {Socket} from 'socket.io-client';
+
 import './App.css';
+import MessageInput from './MessageInput';
+import Messages from './Messages';
+import UsersInfo from './UsersInfo';
 
 function App() {
+  const [socket, setSocket] = useState<Socket>()
+  const [messages, setMessages] = useState<string[]>([]);
+  const [usersCount, setUsersCount] = useState<number>(0);
+
+  const sendMessage = (message: string) => {
+    socket?.emit('message', message);
+  }
+
+  useEffect(() => {
+    const newSocket = io('http://localhost:3002');
+    setSocket(newSocket);
+  }, []);
+
+  const messageListener = (message: string) => {
+    setMessages([...messages, message]);
+  }
+
+  useEffect(() => {
+    socket?.on('message', messageListener);
+
+    return () => {
+      socket?.off('message', messageListener);
+    }
+  }, [messageListener]);
+
+  const usersListener = (users: number) => {
+    setUsersCount(users);
+  }
+
+  useEffect(() => {
+    socket?.on('users', usersListener);
+
+    return () => {
+      socket?.off('message', usersListener);
+    }
+  }, [usersListener])
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <main className="App">
+      <UsersInfo users={usersCount} />
+      <MessageInput sendMessage={sendMessage}/>
+      <Messages messages={messages}/>
+    </main>
   );
 }
 
